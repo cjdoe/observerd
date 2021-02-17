@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/vTCP-Foundation/observerd/common/e"
+	"github.com/vTCP-Foundation/observerd/common/settings"
 	"github.com/vTCP-Foundation/observerd/core"
-	"github.com/vTCP-Foundation/observerd/core/e"
 	"github.com/vTCP-Foundation/observerd/core/logger"
-	"github.com/vTCP-Foundation/observerd/core/settings"
 )
 
 func main() {
@@ -14,9 +14,7 @@ func main() {
 	err = logger.Init()
 	e.InterruptOnError(err)
 
-	c, err := core.New()
-	e.InterruptOnError(err)
-
+	c := core.New()
 	err = <-c.Run()
 	logger.Log.Fatal(err)
 }

@@ -1,8 +1,8 @@
 package nodes
 
 import (
+	"github.com/vTCP-Foundation/observerd/common/settings"
 	"github.com/vTCP-Foundation/observerd/core/logger"
-	"github.com/vTCP-Foundation/observerd/core/settings"
 	"net"
 )
 
