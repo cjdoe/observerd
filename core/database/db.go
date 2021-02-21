@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/vTCP-Foundation/observerd/common/e"
 	"github.com/vTCP-Foundation/observerd/common/settings"
+	"github.com/vTCP-Foundation/observerd/core/ec"
 )
 
 var (
@@ -14,8 +14,8 @@ var (
 
 func DB() *pgxpool.Pool {
 	if db == nil {
-		e.InterruptOnError(initDBPool())
-		e.InterruptOnError(EnsureSchema())
+		ec.InterruptOnError(initDBPool())
+		ec.InterruptOnError(EnsureSchema())
 	}
 
 	return db
