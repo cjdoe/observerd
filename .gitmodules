@@ -1,0 +1,3 @@
+[submodule "go-lamport-crypto"]
+	path = go-lamport-crypto
+	url = git@github.com:vTCP-Foundation/go-lamport-crypto.git

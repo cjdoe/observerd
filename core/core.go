@@ -1,71 +1,34 @@
 package core
 
-import (
-	logchain2 "github.com/vTCP-Foundation/observerd/core/handlers/logchain"
-	"github.com/vTCP-Foundation/observerd/core/logger"
-)
+import "github.com/vTCP-Foundation/observerd/core/logchain/producer"
 
 type Core struct {
-	lc *logchain2.Handler
+	producer *producer.Producer
 }
 
-func New() (core *Core, err error) {
+func New() (core *Core) {
 	core = &Core{
-		lc: logchain2.New(),
+		producer: producer.New(),
 	}
 
 	return
 }
 
-func (c *Core) Run() (flow <-chan error) {
-	errorsFlow := make(chan error)
+func (c *Core) Run() (errorsFlow <-chan error) {
+	flow := make(chan error)
 
 	go func() {
-		var fatalError error
+		var err error
 
 		select {
-		case fatalError = <-c.lc.Run():
+		case err = <-c.producer.Run():
+			{
+			}
+
 		}
 
-		logger.Log.Error(fatalError)
-
-		// todo: stop gracefully
-		//stopGracefully()
-
-		errorsFlow <- fatalError
+		flow <- err
 	}()
 
-	return errorsFlow
+	return flow
 }
-
-//
-//func runComponentsAndWatchForError() {
-//	var fatalError error
-//
-//	select {
-//	case fatalError = <-publicInterface.Run():
-//		{
-//		}
-//	case fatalError = <-nodesInterface.Run():
-//		{
-//		}
-//	case fatalError = <-transactionsHandler.Run():
-//		{
-//		}
-//	}
-//
-//	logger.Log.Error(fatalError)
-//	stopGracefully()
-//}
-//
-//func stopGracefully() {
-//	// WARN: The order is important here!
-//	// Interfaces must be closed in the first order.
-//	// This will prevent accepting of the new transactions,
-//	// so there would not be transactions that would not be processed by the transactions handler.
-//	publicInterface.Stop()
-//	nodesInterface.Stop()
-//
-//	transactionsHandler.Stop()
-//}
-//
