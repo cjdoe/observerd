@@ -3,9 +3,9 @@ package producer
 import (
 	"errors"
 	"fmt"
-	"github.com/vTCP-Foundation/observerd/core/database"
 	"github.com/vTCP-Foundation/observerd/core/ec"
 	"github.com/vTCP-Foundation/observerd/core/utils"
+	crypto "github.com/vTCP-Foundation/observerd/go-lamport-crypto"
 	"time"
 )
 
@@ -31,6 +31,11 @@ func (p *Producer) processInternalLoop(flow chan error) {
 		flow <- err
 	}()
 
+	err = p.ensureGenesisBlock()
+	if err != nil {
+		return
+	}
+
 	var delay time.Duration
 	for {
 		delay, err = p.calculateNextBlockDelay()
@@ -46,6 +51,39 @@ func (p *Producer) processInternalLoop(flow chan error) {
 		}
 
 	}
+}
+
+func (p *Producer) ensureGenesisBlock() (err error) {
+	_, err = p.fetchLastBlockTimestamp()
+	if errors.Is(err, ec.ErrNoData) {
+		// There is no blocks yet.
+		err = p.writeGenesisBlock()
+		if err != nil {
+			err = fmt.Errorf("can't generate genesis block: %w", err)
+			return
+		}
+	}
+
+	return
+}
+
+func (p *Producer) writeGenesisBlock() (err error) {
+	// Genesis block contains no data.
+	// So it needs some random hash as a salt for consequent hashes of all other blocks.
+	h, err := crypto.GenerateRandomHash()
+	if err != nil {
+		err = fmt.Errorf("can't generate random hash for the genesis block: %w", err)
+		return
+	}
+
+	sig, nextBlockPubKey, err := p.signBlockHash(h, 0)
+	if err != nil {
+		err = fmt.Errorf("can't sign hash of the genesis block: %w", err)
+		return
+	}
+
+	err = p.appendBlock(0, sig, crypto.Hash{}, h, nextBlockPubKey)
+	return
 }
 
 func (p *Producer) calculateNextBlockDelay() (delay time.Duration, err error) {
@@ -91,28 +129,7 @@ func (p *Producer) createNextBlock() (err error) {
 	if err != nil {
 		return
 	}
-	nextBlocNumber := lastBlockNumber + 1
 
-	tx, err := database.NewTransaction()
-	if err != nil {
-		return
-	}
-
-	defer database.RollbackSafely(tx)
-
-	tmpHexFixture := "decode('0000', 'hex')"
-	blockCreationQuery := fmt.Sprint(
-		"INSERT INTO blocks (number, prev_block_hash, hash, sig, next_block_pub_key) ",
-		"VALUES (",
-		nextBlocNumber, ", ",
-		tmpHexFixture, ", ", tmpHexFixture, ", ", tmpHexFixture, ", ", tmpHexFixture,
-		")")
-
-	err = database.Exec(tx, blockCreationQuery)
-	if err != nil {
-		return
-	}
-
-	err = database.Commit(tx)
+	err = p.appendBlock(lastBlockNumber+1, &crypto.LamportSig{}, crypto.Hash{}, crypto.Hash{}, &crypto.LamportPubKey{})
 	return
 }
