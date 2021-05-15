@@ -1,20 +1,24 @@
 package main
 
 import (
+	"github.com/rs/zerolog/log"
 	"github.com/vTCP-Foundation/observerd/common/settings"
 	"github.com/vTCP-Foundation/observerd/core"
-	"github.com/vTCP-Foundation/observerd/core/ec"
-	"github.com/vTCP-Foundation/observerd/core/logger"
 )
 
+
 func main() {
-	err := settings.Load()
-	ec.InterruptOnError(err)
+	var err error
 
-	err = logger.Init()
-	ec.InterruptOnError(err)
+	exitOnError := func() {
+		if err != nil {
+			log.Fatal().Err(err).Msg("Exit")
+		}
+	}
 
-	c := core.New()
-	err = <-c.Run()
-	logger.Log.Fatal(err)
+	err = settings.Load()
+	exitOnError()
+
+	err = <- core.New().Run()
+	exitOnError()
 }

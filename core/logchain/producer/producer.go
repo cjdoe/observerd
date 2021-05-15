@@ -19,10 +19,15 @@ func New() *Producer {
 	}
 }
 
-func (p *Producer) Run() (errorsFlow <-chan error) {
+func (p *Producer) Run() (err error) {
 	flow := make(chan error)
 	go p.processInternalLoop(flow)
 	return flow
+}
+
+func (p *Producer) Stop() (err error) {
+	// todo: implement me
+	return
 }
 
 func (p *Producer) processInternalLoop(flow chan error) {

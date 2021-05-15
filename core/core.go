@@ -1,6 +1,11 @@
 package core
 
-import "github.com/vTCP-Foundation/observerd/core/logchain/producer"
+import (
+	"errors"
+	"github.com/rs/zerolog/log"
+	"github.com/vTCP-Foundation/observerd/core/logchain/producer"
+	"sync"
+)
 
 type Core struct {
 	producer *producer.Producer
@@ -14,21 +19,40 @@ func New() (core *Core) {
 	return
 }
 
-func (c *Core) Run() (errorsFlow <-chan error) {
-	flow := make(chan error)
+func (c *Core) Run() (err error) {
+	components := sync.WaitGroup{}
+	criticalErrorsFlow := make(chan error)
 
+	gracefullyStopAllComponents := func () {
+		criticalErrorsFlow <- c.producer.Stop()
+		components.Done()
+	}
+
+	components.Add(1)
 	go func() {
-		var err error
+		criticalErrorsFlow <- c.producer.Run()
 
-		select {
-		case err = <-c.producer.Run():
-			{
-			}
-
-		}
-
-		flow <- err
+		// If this line executes - previous line reported error
+		// and all components must be stooped now.
+		gracefullyStopAllComponents()
 	}()
 
-	return flow
+	// ...
+	// Another component goes here.
+	// WARN: Do not forget to update gracefullyStopAllComponents() method.
+	// ...
+
+	components.Wait()
+
+	for {
+		if len(criticalErrorsFlow) > 0 {
+			log.Err(<- criticalErrorsFlow).Msg("Error caught on core's level")
+
+		} else {
+			break
+		}
+	}
+
+	err = errors.New("core critical error")
+	return
 }

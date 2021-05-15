@@ -1,20 +1,18 @@
-package interfaces
+package nodes
 
 import (
 	"github.com/vTCP-Foundation/observerd/common/settings"
 	"net"
 )
 
-type PublicInterface struct {
+type TCPInterface struct {}
 
-}
-
-func NewPublicInterface() (i *PublicInterface, err error) {
-	i = &PublicInterface{}
+func NewNodesInterface() (i *TCPInterface, err error) {
+	i = &TCPInterface{}
 	return
 }
 
-func (i *PublicInterface) Run() (flow <-chan error) {
+func (i *TCPInterface) Run() (flow <-chan error) {
 	errorsFlow := make(chan error)
 	flow = errorsFlow
 
@@ -24,8 +22,9 @@ func (i *PublicInterface) Run() (flow <-chan error) {
 		return
 	}
 
-	//noinspection GoUnhandledErrorResult
-	defer listener.Close()
+	defer func() {
+		_ = listener.Close()
+	}()
 
 	// todo: add logger here
 
@@ -36,15 +35,11 @@ func (i *PublicInterface) Run() (flow <-chan error) {
 			return
 		}
 
-		go r.handleConnection(conn, globalErrorsFlow)
+		go i.handleConnection(conn, errorsFlow)
 	}
 }
 
-func (i *PublicInterface) handleConnection(conn net.Conn, globalErrorsFlow chan<- error) {
-	processError := func(err errors.E) {
-		conn.Close()
-	}
-
+func (i *TCPInterface) handleConnection(conn net.Conn, globalErrorsFlow chan<- error) {
 	message, err := r.receiveData(conn)
 	if err != nil {
 		processError(err)

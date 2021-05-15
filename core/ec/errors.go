@@ -2,8 +2,6 @@ package ec
 
 import (
 	"errors"
-	"github.com/vTCP-Foundation/observerd/core/logger"
-	"os"
 )
 
 var (
@@ -17,13 +15,3 @@ var (
 	ErrNoData = errors.New("no data fetched")
 	ErrDBRead = errors.New("cant read from database")
 )
-
-func InterruptOnError(err error) {
-	if err != nil {
-		if logger.IsInitialized() {
-			logger.Log.Error(err)
-		}
-
-		os.Exit(-1)
-	}
-}
